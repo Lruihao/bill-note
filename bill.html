@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>1003 乾飯記賬本</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style type="text/css">
+    #form-pay button{
+      width: 3rem;
+    }
+    fieldset{
+      margin: 1rem auto;
+      border-radius: 0.25rem;
+      width: 330px;
+    }
+    .align-center{
+      text-align: center;
+    }
+    .form-item{
+      display: flex;
+      justify-content: space-between;
+      margin: 1rem 0;
+      align-items: center;
+    }
+    .mr-1{
+      margin-right: 0.25rem;
+    }
+    .form-item select,
+    .form-item input{
+      flex-grow: 1;
+      height: 30px;
+    }
+    .form-btns{
+      display: flex;
+      justify-content: space-around;
+      margin: 1rem 0 0.5rem;
+    }
+    ul{
+      padding: 0;
+      list-style: none;
+    }
+    li{
+      margin-bottom: 0.5rem;
+    }
+    .bill-description{
+      margin: 0;
+    }
+    .bill-description:not(:empty)::before{
+      content: '“';
+    }
+    .bill-description:not(:empty)::after{
+      content: '”';
+    }
+    .load-btn{
+      display: block;
+      margin: 0 auto;
+      width: 5rem;
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/leancloud-storage@4.10.0/dist/av-min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vue@2.6.12"></script>
+</head>
+<body>
+  <form id="form-pay">
+    <fieldset>
+      <legend class="align-center">記一筆消費</legend>
+      <div class="form-item">
+        <em>Tips: 提交後等金額重置即保存成功！</em>
+      </div>
+      <div class="form-item">
+        <b class="mr-1">類型</b>
+        <select name="pay_type" form="form-pay">
+          <option value="0">汪成 & 張弛</option>
+          <option value="1">汪成 & 李瑞豪</option>
+          <option value="2">張弛 & 李瑞豪</option>
+          <option value="3" selected>汪成 & 張弛 & 李瑞豪</option>
+        </select>
+      </div>
+      <div class="form-item">
+        <b class="mr-1">付款</b>
+        <select name="pay_user" form="form-pay">
+          <option value="0">汪成</option>
+          <option value="1">張弛</option>
+          <option value="2">李瑞豪</option>
+        </select>
+      </div>
+      <div class="form-item">
+        <b class="mr-1">金額</b>
+        <input type="number" name="pay" min="0" step="0.01" placeholder="消費金額" required/>
+      </div>
+      <div class="form-item">
+        <b class="mr-1">描述</b>
+        <input type="text" name="pay_description" max="50" placeholder="消費描述"/>
+      </div>
+      <div class="form-btns">
+        <button type="reset">取消</button>
+        <button type="submit" class="submit">提交</button>
+      </div>
+    </fieldset>
+  </form>
+  <div id="bill">
+    <fieldset>
+      <legend class="align-center">月度消費結算</legend>
+      <ul class="month-bill">
+        <li class="align-center">
+          <b class="mr-1">结算月份</b><input type="month" class="month"/>
+        </li>
+        <p><b>結算(實付 - 应付)</b></p>
+        <li>汪成: <b>{{ (monthBill.payUser0 - wcBill).toFixed(2) }}</b> 元</li>
+        <li>張弛: <b>{{ (monthBill.payUser1 - zcBill).toFixed(2) }}</b> 元</li>
+        <li>李瑞豪: <b>{{ (monthBill.payUser2 - lrhBill).toFixed(2) }}</b> 元</li>
+        <p><b>實付: {{ monthTotalBill }} 元</b></p>
+        <li>汪成: <b>{{ Number(monthBill.payUser0).toFixed(2) }}</b> 元</li>
+        <li>張弛: <b>{{ Number(monthBill.payUser1).toFixed(2) }}</b> 元</li>
+        <li>李瑞豪: <b>{{ Number(monthBill.payUser2).toFixed(2) }}</b> 元</li>
+        <p><b>个人消费(应付)</b></p>
+        <li>汪成: <b>{{ wcBill }}</b> 元</li>
+        <li>張弛: <b>{{ zcBill }}</b> 元</li>
+        <li>李瑞豪: <b>{{ lrhBill }}</b> 元</li>
+        <p><b>平攤明細</b></p>
+        <li>汪成,張弛: <b>{{ Number(monthBill.payType0).toFixed(2) }}</b> 元</li>
+        <li>汪成,李瑞豪: <b>{{ Number(monthBill.payType1).toFixed(2) }}</b> 元</li>
+        <li>張弛,李瑞豪: <b>{{ Number(monthBill.payType2).toFixed(2) }}</b> 元</li>
+        <li>汪成,張弛,李瑞豪: <b>{{ Number(monthBill.payType3).toFixed(2) }}</b> 元</li>
+      </ul>
+    </fieldset>
+    <fieldset>
+      <legend class="align-center">歷史消費記錄</legend>
+      <ul>
+        <li v-for="bill in bills">
+          <div>{{ bill.payDt }}</div>
+          <p class="bill-description">{{ bill.payDescription }}</p>
+          <span>{{ bill.payType }}</span>, 
+          消費 <strong>{{ bill.pay }}</strong> 元, 
+          <span>付款: {{ bill.payUser }}</span>
+        </li>
+      </ul>
+      <button class="load-btn" v-if="!noMore" @click="loadMore">加载更多</button>
+    </fieldset>
+  </div>
+
+  <script type="text/javascript">
+    //初始化 leancloud-storage 對象
+    AV.init({
+      appId: '',
+      appKey: '',
+      serverURL: ''
+    });
+    //leancloud-storage Bill 查詢對象
+    let queryBill = new AV.Query('Bill');
+    //初始化 Vue 對象
+    let billVm = new Vue({
+      el: '#bill',
+      data: {
+        noMore: true,
+        start: 0,
+        count: 0,
+        monthBill: {},
+        bills: []
+      },
+      computed: {
+        monthTotalBill: function(){
+          return (this.monthBill.payUser0 + this.monthBill.payUser1 + this.monthBill.payUser2).toFixed(2);
+        },
+        wcBill: function(){
+          return this.countBill(this.monthBill.payType0 + this.monthBill.payType1);
+        },
+        zcBill: function(){
+          return this.countBill(this.monthBill.payType0 + this.monthBill.payType2);
+        },
+        lrhBill: function(){
+          return this.countBill(this.monthBill.payType1 + this.monthBill.payType2);
+        }
+      },
+      methods: {
+        loadMore: function () {
+          if (!this.noMore) {
+            getBillData(++this.start, 15);
+          }
+        },
+        countBill: function(twins){
+          return (twins/2 + this.monthBill.payType3/3).toFixed(2);
+        }
+      }
+    });
+
+    //消費類型
+    const payType = {0: '汪成,張弛', 1: '汪成,李瑞豪', 2: '張弛,李瑞豪', 3: '汪成,張弛,李瑞豪'};
+    // 付款人
+    const payUser = {0: '汪成', 1: '張弛', 2: '李瑞豪'};
+
+    //記賬提交按鈕事件監聽
+    document.querySelector('.submit').addEventListener('click',function(event){
+      event.preventDefault();
+      let formPay = document.querySelector('#form-pay');
+      let bill = new AV.Object('Bill');
+      bill.set('pay', Number(formPay.pay.value));
+      bill.set('pay_type', Number(formPay.pay_type.value));
+      bill.set('pay_user', Number(formPay.pay_user.value));
+      bill.set('pay_description', formPay.pay_description.value);
+      bill.save().then((object) => {
+        formPay.reset();
+      }, (function (error) {
+        console.log(JSON.stringify(error));
+        alert('保存失敗');
+      }))
+    });
+
+    //月份輸入框事件監聽
+    document.querySelector('.month').addEventListener('change',function(){
+      getMonthBill(this.value);
+    });
+
+    //默認顯示當前月份統計數據
+    let now = new Date()
+    let currentMonth = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2,0)}`;
+    document.querySelector('.month').value = currentMonth;
+    getMonthBill(currentMonth);
+    //加載消費記錄
+    getBillData(0,15);
+
+    /**
+     * 函數聲明區
+     * =========================================================================================
+     */
+    
+    /**
+     * 獲取歷史消費記錄數據
+     * @param [start=0] 開始位置
+     * @param [count=15] 每次查詢筆數
+     */
+    function getBillData(start = 0,count = 15) {
+      queryBill.descending('createdAt')
+        .skip(start * count).limit(count)
+        .find().then(function (response) {
+          let billLength = response.length;
+          if(billLength > 0){
+            billVm.noMore = (billLength !== count) ? true : false;
+            for(bill of response){
+              billVm.bills.push({
+                pay: bill.attributes.pay,
+                payType: payType[bill.attributes.pay_type],
+                payUser: payUser[bill.attributes.pay_user],
+                payDescription: bill.attributes.pay_description,
+                payDt: new Date(bill.createdAt).toLocaleString()
+              })
+            }
+          } else {
+            billVm.noMore = true;
+          }
+      });
+    }
+
+    /**
+     * 獲取月賬單數據
+     * @param month 年月份 fmt: yyyy-MM
+     */
+    function getMonthBill(month){
+      let dateTime = `${month} 00:00:00`
+      let startMonth = new Date(dateTime);
+      let nextMonth = new Date(new Date(dateTime).setMonth(startMonth.getMonth() + 1));
+      let startDateQuery = new AV.Query('Bill');
+      startDateQuery.greaterThanOrEqualTo('createdAt', startMonth);
+      let endDateQuery = new AV.Query('Bill');
+      endDateQuery.lessThan('createdAt', nextMonth);
+      let MonthBillQuery = AV.Query.and(startDateQuery, endDateQuery);
+      MonthBillQuery.find().then(function(response){
+        billVm.monthBill = {
+          payType0: 0,
+          payType1: 0,
+          payType2: 0,
+          payType3: 0,
+          payUser0: 0,
+          payUser1: 0,
+          payUser2: 0
+        };
+        for(bill of response){
+          let {pay, pay_type, pay_user} = bill.attributes;
+          billVm.monthBill[`payType${pay_type}`] += pay;
+          billVm.monthBill[`payUser${pay_user}`] += pay;
+        }
+      });
+    }
+
+  </script>
+
+</body>
+</html>
