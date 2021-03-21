@@ -140,6 +140,11 @@
   </div>
 
   <script type="text/javascript">
+    /**
+     * 初始化
+     * =========================================================================================
+     */
+    
     //初始化 leancloud-storage 對象
     AV.init({
       appId: '',
@@ -185,24 +190,34 @@
     });
 
     //消費類型
-    const payType = {0: '汪成,張弛', 1: '汪成,李瑞豪', 2: '張弛,李瑞豪', 3: '汪成,張弛,李瑞豪'};
+    const PAY_TYPE = {0: '汪成,張弛', 1: '汪成,李瑞豪', 2: '張弛,李瑞豪', 3: '汪成,張弛,李瑞豪'};
     // 付款人
-    const payUser = {0: '汪成', 1: '張弛', 2: '李瑞豪'};
+    const PAY_USER = {0: '汪成', 1: '張弛', 2: '李瑞豪'};
 
     //記賬提交按鈕事件監聽
     document.querySelector('.submit').addEventListener('click',function(event){
       event.preventDefault();
       let formPay = document.querySelector('#form-pay');
       let bill = new AV.Object('Bill');
-      bill.set('pay', Number(formPay.pay.value));
+      let payValue = Number(formPay.pay.value);
+      let payDescription = formPay.pay_description.value;
+      if(payValue === 0){
+        //不可能是我哈哈哈哈
+        return alert(`又没写金额！我猜是${PAY_USER[Math.floor(Math.random()*2)]}。`);
+      }
+      if(!payDescription){
+        return alert('北鼻，买了啥描述一下嘛~');
+      }
+      bill.set('pay', payValue);
       bill.set('pay_type', Number(formPay.pay_type.value));
       bill.set('pay_user', Number(formPay.pay_user.value));
-      bill.set('pay_description', formPay.pay_description.value);
+      bill.set('pay_description', payDescription);
       bill.save().then((object) => {
         formPay.reset();
+        getMonthBill(document.querySelector('.month').value);
       }, (function (error) {
         console.log(JSON.stringify(error));
-        alert('保存失敗');
+        alert('完蛋保存失敗了，网络不好吧！');
       }))
     });
 
@@ -210,14 +225,6 @@
     document.querySelector('.month').addEventListener('change',function(){
       getMonthBill(this.value);
     });
-
-    //默認顯示當前月份統計數據
-    let now = new Date()
-    let currentMonth = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2,0)}`;
-    document.querySelector('.month').value = currentMonth;
-    getMonthBill(currentMonth);
-    //加載消費記錄
-    getBillData(0,15);
 
     /**
      * 函數聲明區
@@ -239,8 +246,8 @@
             for(bill of response){
               billVm.bills.push({
                 pay: bill.attributes.pay,
-                payType: payType[bill.attributes.pay_type],
-                payUser: payUser[bill.attributes.pay_user],
+                payType: PAY_TYPE[bill.attributes.pay_type],
+                payUser: PAY_USER[bill.attributes.pay_user],
                 payDescription: bill.attributes.pay_description,
                 payDt: new Date(bill.createdAt).toLocaleString()
               })
@@ -281,6 +288,19 @@
         }
       });
     }
+
+    /**
+     * 执行
+     * =========================================================================================
+     */
+
+    //默認顯示當前月份統計數據
+    let now = new Date()
+    let currentMonth = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2,0)}`;
+    document.querySelector('.month').value = currentMonth;
+    getMonthBill(currentMonth);
+    //加載消費記錄
+    getBillData(0,15);
 
   </script>
 
