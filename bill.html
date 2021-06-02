@@ -106,22 +106,22 @@
           <b class="mr-1">结算月份</b><input type="month" class="month"/>
         </li>
         <p><b>結算(實付 - 应付)</b></p>
-        <li>汪成: <b>{{ (monthBill.payUser0 - wcBill).toFixed(2) }}</b> 元</li>
-        <li>張弛: <b>{{ (monthBill.payUser1 - zcBill).toFixed(2) }}</b> 元</li>
-        <li>李瑞豪: <b>{{ (monthBill.payUser2 - lrhBill).toFixed(2) }}</b> 元</li>
+        <li>汪成: <b>{{ toFixed(monthBill.payUser0 - wcBill) }}</b> 元</li>
+        <li>張弛: <b>{{ toFixed(monthBill.payUser1 - zcBill) }}</b> 元</li>
+        <li>李瑞豪: <b>{{ toFixed(monthBill.payUser2 - lrhBill) }}</b> 元</li>
         <p><b>實付: {{ monthTotalBill }} 元</b></p>
-        <li>汪成: <b>{{ Number(monthBill.payUser0).toFixed(2) }}</b> 元</li>
-        <li>張弛: <b>{{ Number(monthBill.payUser1).toFixed(2) }}</b> 元</li>
-        <li>李瑞豪: <b>{{ Number(monthBill.payUser2).toFixed(2) }}</b> 元</li>
+        <li>汪成: <b>{{ toFixed(monthBill.payUser0) }}</b> 元</li>
+        <li>張弛: <b>{{ toFixed(monthBill.payUser1) }}</b> 元</li>
+        <li>李瑞豪: <b>{{ toFixed(monthBill.payUser2) }}</b> 元</li>
         <p><b>个人消费(应付)</b></p>
         <li>汪成: <b>{{ wcBill }}</b> 元</li>
         <li>張弛: <b>{{ zcBill }}</b> 元</li>
         <li>李瑞豪: <b>{{ lrhBill }}</b> 元</li>
         <p><b>平攤明細</b></p>
-        <li>汪成,張弛: <b>{{ Number(monthBill.payType0).toFixed(2) }}</b> 元</li>
-        <li>汪成,李瑞豪: <b>{{ Number(monthBill.payType1).toFixed(2) }}</b> 元</li>
-        <li>張弛,李瑞豪: <b>{{ Number(monthBill.payType2).toFixed(2) }}</b> 元</li>
-        <li>汪成,張弛,李瑞豪: <b>{{ Number(monthBill.payType3).toFixed(2) }}</b> 元</li>
+        <li>汪成,張弛: <b>{{ toFixed(monthBill.payType0) }}</b> 元</li>
+        <li>汪成,李瑞豪: <b>{{ toFixed(monthBill.payType1) }}</b> 元</li>
+        <li>張弛,李瑞豪: <b>{{ toFixed(monthBill.payType2) }}</b> 元</li>
+        <li>汪成,張弛,李瑞豪: <b>{{ toFixed(monthBill.payType3) }}</b> 元</li>
       </ul>
     </fieldset>
     <fieldset>
@@ -185,7 +185,10 @@
         },
         countBill: function(twins){
           return (twins/2 + this.monthBill.payType3/3).toFixed(2);
-        }
+        },
+		toFixed: function(num){
+			return Number(num).toFixed(2);
+		}
       }
     });
 
