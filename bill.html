@@ -70,18 +70,18 @@
       <div class="form-item">
         <b class="mr-1">類型</b>
         <select name="pay_type" form="form-pay">
-          <option value="0">汪成 & 張弛</option>
-          <option value="1">汪成 & 李瑞豪</option>
-          <option value="2">張弛 & 李瑞豪</option>
-          <option value="3" selected>汪成 & 張弛 & 李瑞豪</option>
+          <option value="0" disabled>汪成 & 張弛</option>
+          <option value="1" disabled>汪成 & 李瑞豪</option>
+          <option value="2" selected>張弛 & 李瑞豪</option>
+          <option value="3" disabled>汪成 & 張弛 & 李瑞豪</option>
         </select>
       </div>
       <div class="form-item">
         <b class="mr-1">付款</b>
         <select name="pay_user" form="form-pay">
-          <option value="0">汪成</option>
+          <option value="0" disabled>汪成</option>
           <option value="1">張弛</option>
-          <option value="2">李瑞豪</option>
+          <option value="2" selected>李瑞豪</option>
         </select>
       </div>
       <div class="form-item">
@@ -103,25 +103,27 @@
       <legend class="align-center">月度消費結算</legend>
       <ul class="month-bill">
         <li class="align-center">
-          <b class="mr-1">结算月份</b><input type="month" class="month"/>
+          <b class="mr-1">结算月份</b><input type="month" class="month" v-model="month"/>
         </li>
         <p><b>結算(實付 - 应付)</b></p>
-        <li>汪成: <b>{{ toFixed(monthBill.payUser0 - wcBill) }}</b> 元</li>
+        <li v-show="hideWc">汪成: <b>{{ toFixed(monthBill.payUser0 - wcBill) }}</b> 元</li>
         <li>張弛: <b>{{ toFixed(monthBill.payUser1 - zcBill) }}</b> 元</li>
         <li>李瑞豪: <b>{{ toFixed(monthBill.payUser2 - lrhBill) }}</b> 元</li>
         <p><b>實付: {{ monthTotalBill }} 元</b></p>
-        <li>汪成: <b>{{ toFixed(monthBill.payUser0) }}</b> 元</li>
+        <li v-show="hideWc">汪成: <b>{{ toFixed(monthBill.payUser0) }}</b> 元</li>
         <li>張弛: <b>{{ toFixed(monthBill.payUser1) }}</b> 元</li>
         <li>李瑞豪: <b>{{ toFixed(monthBill.payUser2) }}</b> 元</li>
         <p><b>个人消费(应付)</b></p>
-        <li>汪成: <b>{{ wcBill }}</b> 元</li>
+        <li v-show="hideWc">汪成: <b>{{ wcBill }}</b> 元</li>
         <li>張弛: <b>{{ zcBill }}</b> 元</li>
         <li>李瑞豪: <b>{{ lrhBill }}</b> 元</li>
-        <p><b>平攤明細</b></p>
-        <li>汪成,張弛: <b>{{ toFixed(monthBill.payType0) }}</b> 元</li>
-        <li>汪成,李瑞豪: <b>{{ toFixed(monthBill.payType1) }}</b> 元</li>
-        <li>張弛,李瑞豪: <b>{{ toFixed(monthBill.payType2) }}</b> 元</li>
-        <li>汪成,張弛,李瑞豪: <b>{{ toFixed(monthBill.payType3) }}</b> 元</li>
+		<div v-show="hideWc">
+		  <p><b>平攤明細</b></p>
+		  <li>汪成,張弛: <b>{{ toFixed(monthBill.payType0) }}</b> 元</li>
+		  <li>汪成,李瑞豪: <b>{{ toFixed(monthBill.payType1) }}</b> 元</li>
+		  <li>張弛,李瑞豪: <b>{{ toFixed(monthBill.payType2) }}</b> 元</li>
+		  <li>汪成,張弛,李瑞豪: <b>{{ toFixed(monthBill.payType3) }}</b> 元</li>
+		</div
       </ul>
     </fieldset>
     <fieldset>
@@ -140,6 +142,31 @@
   </div>
 
   <script type="text/javascript">
+    /**
+     * Date format
+     * @param {String} fmt format
+     * @returns {String} format date
+     */
+    Date.prototype.format = function (fmt) {
+      let o = {
+        'M+': this.getMonth() + 1, //月份 
+        'd+': this.getDate(), //日 
+        'h+': this.getHours(), //小时 
+        'm+': this.getMinutes(), //分 
+        's+': this.getSeconds(), //秒 
+        'q+': Math.floor((this.getMonth() + 3) / 3), //季度 
+        'S': this.getMilliseconds()             //毫秒 
+      };
+      if (/(y+)/.test(fmt)) {
+        fmt = fmt.replace(RegExp.$1, (this.getFullYear() + "").substr(4 - RegExp.$1.length));
+      }
+      for (let k in o) {
+        if (new RegExp('(' + k + ')').test(fmt)) {
+          fmt = fmt.replace(RegExp.$1, (RegExp.$1.length === 1) ? (o[k]) : (("00" + o[k]).substr(("" + o[k]).length)));
+        }
+      }
+      return fmt;
+    };
     /**
      * 初始化
      * =========================================================================================
@@ -161,7 +188,9 @@
         start: 0,
         count: 0,
         monthBill: {},
-        bills: []
+        bills: [],
+        month: new Date().format('yyyy-MM'),
+        hideWc: false
       },
       computed: {
         monthTotalBill: function(){
@@ -177,6 +206,11 @@
           return this.countBill(this.monthBill.payType1 + this.monthBill.payType2);
         }
       },
+	  watch: {
+	  	month: function(month){
+	  	  this.hideWc = month < '2021-06';
+	  	}
+	  },
       methods: {
         loadMore: function () {
           if (!this.noMore) {
@@ -206,7 +240,8 @@
       let payDescription = formPay.pay_description.value;
       if(payValue === 0){
         //不可能是我哈哈哈哈
-        return alert(`又没写金额！我猜是${PAY_USER[Math.floor(Math.random()*2)]}。`);
+        // return alert(`又没写金额！我猜是${PAY_USER[Math.floor(Math.random()*2)]}。`);
+        return alert('又没写金额哦！');
       }
       if(!payDescription){
         return alert('北鼻，买了啥描述一下嘛~');
@@ -252,7 +287,7 @@
                 payType: PAY_TYPE[bill.attributes.pay_type],
                 payUser: PAY_USER[bill.attributes.pay_user],
                 payDescription: bill.attributes.pay_description,
-                payDt: new Date(bill.createdAt).toLocaleString()
+                payDt: new Date(bill.createdAt).format('yyyy-MM-dd hh:mm:ss')
               })
             }
           } else {
@@ -266,9 +301,9 @@
      * @param month 年月份 fmt: yyyy-MM
      */
     function getMonthBill(month){
-      let dateTime = `${month} 00:00:00`
-      let startMonth = new Date(dateTime);
-      let nextMonth = new Date(new Date(dateTime).setMonth(startMonth.getMonth() + 1));
+      let baseDt = new Date().format(`${month.replace('-','/')}/01 00:00:00`);
+      let startMonth = new Date(baseDt);
+      let nextMonth = new Date(new Date(baseDt).setMonth(startMonth.getMonth() + 1));
       let startDateQuery = new AV.Query('Bill');
       startDateQuery.greaterThanOrEqualTo('createdAt', startMonth);
       let endDateQuery = new AV.Query('Bill');
@@ -298,10 +333,7 @@
      */
 
     //默認顯示當前月份統計數據
-    let now = new Date()
-    let currentMonth = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2,0)}`;
-    document.querySelector('.month').value = currentMonth;
-    getMonthBill(currentMonth);
+    getMonthBill(billVm.month);
     //加載消費記錄
     getBillData(0,15);
 
