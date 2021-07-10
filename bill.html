@@ -4,61 +4,10 @@
   <title>1003 乾飯記賬本</title>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style type="text/css">
-    #form-pay button{
-      width: 3rem;
-    }
-    fieldset{
-      margin: 1rem auto;
-      border-radius: 0.25rem;
-      width: 330px;
-    }
-    .align-center{
-      text-align: center;
-    }
-    .form-item{
-      display: flex;
-      justify-content: space-between;
-      margin: 1rem 0;
-      align-items: center;
-    }
-    .mr-1{
-      margin-right: 0.25rem;
-    }
-    .form-item select,
-    .form-item input{
-      flex-grow: 1;
-      height: 30px;
-    }
-    .form-btns{
-      display: flex;
-      justify-content: space-around;
-      margin: 1rem 0 0.5rem;
-    }
-    ul{
-      padding: 0;
-      list-style: none;
-    }
-    li{
-      margin-bottom: 0.5rem;
-    }
-    .bill-description{
-      margin: 0;
-    }
-    .bill-description:not(:empty)::before{
-      content: '“';
-    }
-    .bill-description:not(:empty)::after{
-      content: '”';
-    }
-    .load-btn{
-      display: block;
-      margin: 0 auto;
-      width: 5rem;
-    }
-  </style>
+  <link rel="stylesheet" type="text/css" href="bill.css">
   <script src="https://cdn.jsdelivr.net/npm/leancloud-storage@4.10.0/dist/av-min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/vue@2.6.12"></script>
+  <script type="text/javascript" src="bill.js" defer></script>
 </head>
 <body>
   <form id="form-pay">
@@ -98,12 +47,13 @@
       </div>
     </fieldset>
   </form>
-  <div id="bill">
+
+  <div id="bill" v-cloak>
     <fieldset>
       <legend class="align-center">月度消費結算</legend>
       <ul class="month-bill">
         <li class="align-center">
-          <b class="mr-1">结算月份</b><input type="month" class="month" v-model="month"/>
+          <b class="mr-1">结算月份</b><input type="month" v-model="month"/>
         </li>
         <p><b>結算(實付 - 应付)</b></p>
         <li v-show="hideWc">汪成: <b>{{ toFixed(monthBill.payUser0 - wcBill) }}</b> 元</li>
@@ -117,18 +67,18 @@
         <li v-show="hideWc">汪成: <b>{{ wcBill }}</b> 元</li>
         <li>張弛: <b>{{ zcBill }}</b> 元</li>
         <li>李瑞豪: <b>{{ lrhBill }}</b> 元</li>
-		<div v-show="hideWc">
-		  <p><b>平攤明細</b></p>
-		  <li>汪成,張弛: <b>{{ toFixed(monthBill.payType0) }}</b> 元</li>
-		  <li>汪成,李瑞豪: <b>{{ toFixed(monthBill.payType1) }}</b> 元</li>
-		  <li>張弛,李瑞豪: <b>{{ toFixed(monthBill.payType2) }}</b> 元</li>
-		  <li>汪成,張弛,李瑞豪: <b>{{ toFixed(monthBill.payType3) }}</b> 元</li>
-		</div
+    		<div v-show="hideWc">
+    		  <p><b>平攤明細</b></p>
+    		  <li>汪成,張弛: <b>{{ toFixed(monthBill.payType0) }}</b> 元</li>
+    		  <li>汪成,李瑞豪: <b>{{ toFixed(monthBill.payType1) }}</b> 元</li>
+    		  <li>張弛,李瑞豪: <b>{{ toFixed(monthBill.payType2) }}</b> 元</li>
+    		  <li>汪成,張弛,李瑞豪: <b>{{ toFixed(monthBill.payType3) }}</b> 元</li>
+    		</div>
       </ul>
     </fieldset>
     <fieldset>
       <legend class="align-center">歷史消費記錄</legend>
-      <ul>
+      <ul class="bill-history">
         <li v-for="bill in bills">
           <div>{{ bill.payDt }}</div>
           <p class="bill-description">{{ bill.payDescription }}</p>
@@ -137,207 +87,9 @@
           <span>付款: {{ bill.payUser }}</span>
         </li>
       </ul>
-      <button class="load-btn" v-if="!noMore" @click="loadMore">加载更多</button>
+      <button class="load-btn" v-if="!load.noMore" @click="loadMore">加载更多</button>
     </fieldset>
   </div>
-
-  <script type="text/javascript">
-    /**
-     * Date format
-     * @param {String} fmt format
-     * @returns {String} format date
-     */
-    Date.prototype.format = function (fmt) {
-      let o = {
-        'M+': this.getMonth() + 1, //月份 
-        'd+': this.getDate(), //日 
-        'h+': this.getHours(), //小时 
-        'm+': this.getMinutes(), //分 
-        's+': this.getSeconds(), //秒 
-        'q+': Math.floor((this.getMonth() + 3) / 3), //季度 
-        'S': this.getMilliseconds()             //毫秒 
-      };
-      if (/(y+)/.test(fmt)) {
-        fmt = fmt.replace(RegExp.$1, (this.getFullYear() + "").substr(4 - RegExp.$1.length));
-      }
-      for (let k in o) {
-        if (new RegExp('(' + k + ')').test(fmt)) {
-          fmt = fmt.replace(RegExp.$1, (RegExp.$1.length === 1) ? (o[k]) : (("00" + o[k]).substr(("" + o[k]).length)));
-        }
-      }
-      return fmt;
-    };
-    /**
-     * 初始化
-     * =========================================================================================
-     */
-    
-    //初始化 leancloud-storage 對象
-    AV.init({
-      appId: '',
-      appKey: '',
-      serverURL: ''
-    });
-    //leancloud-storage Bill 查詢對象
-    let queryBill = new AV.Query('Bill');
-    //初始化 Vue 對象
-    let billVm = new Vue({
-      el: '#bill',
-      data: {
-        noMore: true,
-        start: 0,
-        count: 0,
-        monthBill: {},
-        bills: [],
-        month: new Date().format('yyyy-MM'),
-        hideWc: false
-      },
-      computed: {
-        monthTotalBill: function(){
-          return (this.monthBill.payUser0 + this.monthBill.payUser1 + this.monthBill.payUser2).toFixed(2);
-        },
-        wcBill: function(){
-          return this.countBill(this.monthBill.payType0 + this.monthBill.payType1);
-        },
-        zcBill: function(){
-          return this.countBill(this.monthBill.payType0 + this.monthBill.payType2);
-        },
-        lrhBill: function(){
-          return this.countBill(this.monthBill.payType1 + this.monthBill.payType2);
-        }
-      },
-	  watch: {
-	  	month: function(month){
-	  	  this.hideWc = month < '2021-06';
-	  	}
-	  },
-      methods: {
-        loadMore: function () {
-          if (!this.noMore) {
-            getBillData(++this.start, 15);
-          }
-        },
-        countBill: function(twins){
-          return (twins/2 + this.monthBill.payType3/3).toFixed(2);
-        },
-		toFixed: function(num){
-			return Number(num).toFixed(2);
-		}
-      }
-    });
-
-    //消費類型
-    const PAY_TYPE = {0: '汪成,張弛', 1: '汪成,李瑞豪', 2: '張弛,李瑞豪', 3: '汪成,張弛,李瑞豪'};
-    // 付款人
-    const PAY_USER = {0: '汪成', 1: '張弛', 2: '李瑞豪'};
-
-    //記賬提交按鈕事件監聽
-    document.querySelector('.submit').addEventListener('click',function(event){
-      event.preventDefault();
-      let formPay = document.querySelector('#form-pay');
-      let bill = new AV.Object('Bill');
-      let payValue = Number(formPay.pay.value);
-      let payDescription = formPay.pay_description.value;
-      if(payValue === 0){
-        //不可能是我哈哈哈哈
-        // return alert(`又没写金额！我猜是${PAY_USER[Math.floor(Math.random()*2)]}。`);
-        return alert('又没写金额哦！');
-      }
-      if(!payDescription){
-        return alert('北鼻，买了啥描述一下嘛~');
-      }
-      bill.set('pay', payValue);
-      bill.set('pay_type', Number(formPay.pay_type.value));
-      bill.set('pay_user', Number(formPay.pay_user.value));
-      bill.set('pay_description', payDescription);
-      bill.save().then((object) => {
-        formPay.reset();
-        getMonthBill(document.querySelector('.month').value);
-      }, (function (error) {
-        console.log(JSON.stringify(error));
-        alert('完蛋保存失敗了，网络不好吧！');
-      }))
-    });
-
-    //月份輸入框事件監聽
-    document.querySelector('.month').addEventListener('change',function(){
-      getMonthBill(this.value);
-    });
-
-    /**
-     * 函數聲明區
-     * =========================================================================================
-     */
-    
-    /**
-     * 獲取歷史消費記錄數據
-     * @param [start=0] 開始位置
-     * @param [count=15] 每次查詢筆數
-     */
-    function getBillData(start = 0,count = 15) {
-      queryBill.descending('createdAt')
-        .skip(start * count).limit(count)
-        .find().then(function (response) {
-          let billLength = response.length;
-          if(billLength > 0){
-            billVm.noMore = (billLength !== count) ? true : false;
-            for(bill of response){
-              billVm.bills.push({
-                pay: bill.attributes.pay,
-                payType: PAY_TYPE[bill.attributes.pay_type],
-                payUser: PAY_USER[bill.attributes.pay_user],
-                payDescription: bill.attributes.pay_description,
-                payDt: new Date(bill.createdAt).format('yyyy-MM-dd hh:mm:ss')
-              })
-            }
-          } else {
-            billVm.noMore = true;
-          }
-      });
-    }
-
-    /**
-     * 獲取月賬單數據
-     * @param month 年月份 fmt: yyyy-MM
-     */
-    function getMonthBill(month){
-      let baseDt = new Date().format(`${month.replace('-','/')}/01 00:00:00`);
-      let startMonth = new Date(baseDt);
-      let nextMonth = new Date(new Date(baseDt).setMonth(startMonth.getMonth() + 1));
-      let startDateQuery = new AV.Query('Bill');
-      startDateQuery.greaterThanOrEqualTo('createdAt', startMonth);
-      let endDateQuery = new AV.Query('Bill');
-      endDateQuery.lessThan('createdAt', nextMonth);
-      let MonthBillQuery = AV.Query.and(startDateQuery, endDateQuery);
-      MonthBillQuery.find().then(function(response){
-        billVm.monthBill = {
-          payType0: 0,
-          payType1: 0,
-          payType2: 0,
-          payType3: 0,
-          payUser0: 0,
-          payUser1: 0,
-          payUser2: 0
-        };
-        for(bill of response){
-          let {pay, pay_type, pay_user} = bill.attributes;
-          billVm.monthBill[`payType${pay_type}`] += pay;
-          billVm.monthBill[`payUser${pay_user}`] += pay;
-        }
-      });
-    }
-
-    /**
-     * 执行
-     * =========================================================================================
-     */
-
-    //默認顯示當前月份統計數據
-    getMonthBill(billVm.month);
-    //加載消費記錄
-    getBillData(0,15);
-
-  </script>
 
 </body>
 </html>

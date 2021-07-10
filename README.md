@@ -18,7 +18,7 @@ AV.init({
 ```
 
 # Push
-push the `bill.html` to web server.
+push the `bill-note` to web server.
 
 # 技术栈
 - leancloud-storage
