@@ -11,7 +11,7 @@ Date.prototype.format = function (fmt) {
     'm+': this.getMinutes(), //分 
     's+': this.getSeconds(), //秒 
     'q+': Math.floor((this.getMonth() + 3) / 3), //季度 
-    'S': this.getMilliseconds()             //毫秒 
+    'S': this.getMilliseconds() //毫秒 
   };
   if (/(y+)/.test(fmt)) {
     fmt = fmt.replace(RegExp.$1, (this.getFullYear() + "").substr(4 - RegExp.$1.length));
@@ -44,7 +44,7 @@ new Vue({
   el: '#bill',
   data: {
     load:{
-      noMore: true,
+      more: false,
       start: 0, //开始查询位置
       count: 15, //每次查詢筆數
       offset: 0
@@ -87,7 +87,7 @@ new Vue({
         .find().then(function (response) {
           let billLength = response.length;
           if(billLength > 0){
-            billVm.load.noMore = (billLength !== billVm.load.count) ? true : false;
+            billVm.load.more = billLength === billVm.load.count;
             for(bill of response){
               billVm.bills.push({
                 pay: bill.attributes.pay,
@@ -98,7 +98,7 @@ new Vue({
               })
             }
           } else {
-            billVm.load.noMore = true;
+            billVm.load.more = false;
           }
       });
     },
@@ -116,6 +116,9 @@ new Vue({
       endDateQuery.lessThan('createdAt', nextMonth);
       let MonthBillQuery = AV.Query.and(startDateQuery, endDateQuery);
       MonthBillQuery.find().then(function(response){
+        for(let key in billVm.monthBill){
+          billVm.monthBill[key] = 0;
+        }
         for(bill of response){
           let {pay, pay_type, pay_user} = bill.attributes;
           billVm.monthBill[`payType${pay_type}`] += pay;
@@ -124,7 +127,7 @@ new Vue({
       });
     },
     loadMore: function () {
-      if (!this.load.noMore) {
+      if (this.load.more) {
         this.load.start++;
         this.getBillData();
       }

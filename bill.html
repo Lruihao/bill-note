@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>1003 乾飯記賬本</title>
+  <title>303 乾飯記賬本</title>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" type="text/css" href="bill.css">
@@ -87,7 +87,7 @@
           <span>付款: {{ bill.payUser }}</span>
         </li>
       </ul>
-      <button class="load-btn" v-if="!load.noMore" @click="loadMore">加载更多</button>
+      <button class="load-btn" v-if="load.more" @click="loadMore">加载更多</button>
     </fieldset>
   </div>
 
