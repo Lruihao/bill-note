@@ -24,11 +24,14 @@ Date.prototype.format = function (fmt) {
   return fmt;
 };
 
-//初始化 leancloud-storage 對象
+/**
+ * 初始化 leancloud-storage 對象<br/>
+ * 替換為自己的 appId, appKey, serverURL
+ */
 AV.init({
-  appId: '',
-  appKey: '',
-  serverURL: ''
+  appId: 'S2fJ4HuOfyF5zuDGNuKi6maF-gzGzoHsz',
+  appKey: 'dRCwn1pyg4DBXiw06kchF3KB',
+  serverURL: 'https://s2fj4huo.lc-cn-n1-shared.com'
 });
 //leancloud-storage Bill 查詢對象
 let queryBill = new AV.Query('Bill');
@@ -73,6 +76,7 @@ new Vue({
   watch: {
     month: function(month){
       this.getMonthBill();
+      // 2020年5月汪成搬走
       this.hideWc = month < '2021-06';
     }
   },
@@ -139,6 +143,9 @@ new Vue({
       return Number(num).toFixed(2);
     }
   },
+  created: function(){
+    console.warn('青山不改，綠水長流，兄弟們江湖再見！');
+  },
   mounted: function(){
     let billVm = this;
     //默認顯示當前月份統計數據
@@ -182,7 +189,7 @@ new Vue({
         billVm.load.offset++;
         formPay.reset();
       }, (function (error) {
-        console.log(JSON.stringify(error));
+        console.error(JSON.stringify(error));
         alert('完蛋保存失敗了，网络不好吧！');
       }))
     });
