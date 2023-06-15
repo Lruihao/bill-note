@@ -1,5 +1,7 @@
 # Preparation
+
 去 leancloud 创建一个应用，再新增一个 Bill Class, 补充一下字段：
+
 | name | type   | description |
 | ---  | ---    | ---     |
 | pay  | Number | 消费金额 |
@@ -8,7 +10,9 @@
 | pay_user | String | 付款人 |
 
 # Init
+
 set for yourself.
+
 ```
 AV.init({
     appId: '',
@@ -18,9 +22,11 @@ AV.init({
 ```
 
 # Push
-push the `bill-note/public` to web server.
+
+push the `bill-note/docs` to web server.
 
 # 技术栈
+
 - leancloud-storage
 - Vue.js
-- HTML,CSS,JS
+- HTML, CSS, JS
